@@ -1,6 +1,7 @@
 const express = require("express");
 const favicon = require("serve-favicon");
 const http = require("http");
+require('dotenv').config();
 
 const {
   ApolloServerPluginDrainHttpServer,
@@ -42,6 +43,7 @@ async function startApolloServer() {
   const apolloServer = new ApolloServer({
     typeDefs,
     resolvers,
+    introspection: process.env.NODE_ENV !== 'production',
     csrfPrevention: true,
     cache: "bounded",
     plugins: [
@@ -52,9 +54,10 @@ async function startApolloServer() {
 
 
   app.use(favicon(__dirname + "/favicon.ico"));
+  
   await apolloServer.start();
 
-  apolloServer.applyMiddleware({ app, path: "/"});
+  apolloServer.applyMiddleware({ app });
   await new Promise(resolve => httpServer.listen({ port: process.env.PORT }, resolve));
   console.log(`🚀 Server ready at http://localhost:${process.env.PORT}${apolloServer.graphqlPath}`);
   return { apolloServer, app };
