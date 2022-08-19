@@ -55,15 +55,15 @@ async function startApolloServer() {
   await apolloServer.start();
 
   apolloServer.applyMiddleware({ app, path: "/"});
-  await new Promise(resolve => httpServer.listen({ port: 4000 }, resolve));
-  console.log(`🚀 Server ready at http://localhost:4000${apolloServer.graphqlPath}`);
+  await new Promise(resolve => httpServer.listen({ port: process.env.PORT }, resolve));
+  console.log(`🚀 Server ready at http://localhost:${process.env.PORT}${apolloServer.graphqlPath}`);
   return { apolloServer, app };
 }
 
 startApolloServer()
   .then(({apolloServer, app}) => { 
     console.log(
-      `Server operational at: http://localhost:4000/${apolloServer.graphqlPath}`
+      `Server operational at: http://localhost:${process.env.PORT}${apolloServer.graphqlPath}`
     );
   })
   .catch((err) => {
