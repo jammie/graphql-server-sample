@@ -1,11 +1,15 @@
-const {
-  ApolloServerPluginLandingPageLocalDefault
-} = require('apollo-server-core');
+const express = require("express");
+const favicon = require("serve-favicon");
+const http = require("http");
 
-const { ApolloServer, gql } = require('apollo-server');
+const {
+  ApolloServerPluginDrainHttpServer,
+  ApolloServerPluginLandingPageLocalDefault,
+} = require("apollo-server-core");
+
+const { ApolloServer, gql } = require("apollo-server-express");
 
 const typeDefs = gql`
-
   type Book {
     title: String
     author: String
@@ -14,17 +18,16 @@ const typeDefs = gql`
   type Query {
     books: [Book]
   }
-
 `;
 
 const books = [
   {
-    title: 'The Awakening',
-    author: 'Kate Chopin',
+    title: "The Awakening",
+    author: "Kate Chopin",
   },
   {
-    title: 'City of Glass',
-    author: 'Paul Auster',
+    title: "City of Glass",
+    author: "Paul Auster",
   },
 ];
 
@@ -33,18 +36,38 @@ const resolvers = {
     books: () => books,
   },
 };
+async function startApolloServer() {
+  const app = express();
+  const httpServer = http.createServer(app);
+  const apolloServer = new ApolloServer({
+    typeDefs,
+    resolvers,
+    csrfPrevention: true,
+    cache: "bounded",
+    plugins: [
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+      ApolloServerPluginLandingPageLocalDefault({ embed: true }),
+    ],
+  });
 
 
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-  csrfPrevention: true,
-  cache: 'bounded',
-  plugins: [
-    ApolloServerPluginLandingPageLocalDefault({ embed: true }),
-  ],
-});
+  app.use(favicon(__dirname + "/favicon.ico"));
+  await apolloServer.start();
 
-server.listen().then(({ url }) => {
-  console.log(`🚀  Server ready at ${url}`);
-});
+  apolloServer.applyMiddleware({ app, path: "/"});
+  await new Promise(resolve => httpServer.listen({ port: 4000 }, resolve));
+  console.log(`🚀 Server ready at http://localhost:4000${apolloServer.graphqlPath}`);
+  return { apolloServer, app };
+}
+
+startApolloServer()
+  .then(({apolloServer, app}) => { 
+    console.log(
+      `Server operational at: http://localhost:4000/${apolloServer.graphqlPath}`
+    );
+  })
+  .catch((err) => {
+    console.log(`Error occurred during server startup: ${err}`);
+    process.exit(1);
+  });
+
